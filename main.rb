@@ -104,28 +104,43 @@ class Turn
   def process(player)
     #Given a player, print out their current hand, and offer play options as follows.
     #1: check for special states, i.e. split, double down
-    #2: for each elgible hand, ask if the player wants to hit/stay
-    
+    #2: for each elgible hand, ask if the player wants to (h)it/(s)tay
+
     self.print_player_status (player)
     one_card = self.check_special(player)
 
+    hand_index = 0
     for hand in @PLAYER_TO_BETS[player].keys
-      #loop for each hand until valid response
+      hand_index += 1
+
+      #Doubled down, so hit and quit.
+      if one_card
+        printf "You doubled down, hitting once and ending\nxs"
+        hand_value = self.hit(player, hand)
+        if hand_value > 21
+          printf "Bust, hand%s is now over 21.\n", hand_index
+        end
+        next
+      end
+
+      #Regular hit/stay, loop for each hand until valid response
       while true
-        printf "For you  hand of %s, with bet %s, would you like to hit? Reply (h)it/(s)tay.", hand, @PLAYER_TO_BETS[player]
+        printf "For you hand%s of %s, with bet %s, would you like to hit? Reply (h)it/(s)tay.\n" , hand_index, hand, @PLAYER_TO_BETS[player]
         hit_stay_response = gets.chomp.downcase
-        if hit_stay_response == "h" or hit_stay_response == "hit":
-            self.hit(player, hand)
-        elsif hit_stay_response == "s" or hit_stay_response == "stay":
+        if hit_stay_response == "h" or hit_stay_response == "hit"
+          hand_value = self.hit(player, hand)
+          if hand_value > 21
+            printf "Bust, hand%s is now over 21.\n", hand_index
             break
+          end          
+        elsif hit_stay_response == "s" or hit_stay_response == "stay"
+          break
         else
-          printf "Your input of \"%s\" is invalid. Try again:"
+          printf "Your input of \"%s\" is invalid. Try again: \n"
           next
         end
       end
-    end
-
-    
+    end  
   end
 
   def check_special(player)

@@ -71,7 +71,11 @@ class TestPlayer <  Test::Unit::TestCase
 end
 
 class TestTurn <  Test::Unit::TestCase
-  
+
+  def setup
+    @a = Deck.instance
+  end
+
   def test_turn
   end
 
