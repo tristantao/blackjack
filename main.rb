@@ -10,8 +10,8 @@ class Game
 
   def prepare
     #Gets Player count and initializes.
+    #Grab the number of players and creates PLAYER_LIST [<Player>]
 
-    #Grab the number of players
     print "Welcome to Black Jack! How many players?\n"
     raw_player_size = gets.chomp
     begin
@@ -42,18 +42,20 @@ class Game
   def start
     #Start the betting loop; ends when everyone is broke!
     while not self.game_end?
+      #First ask everyone for their bet price.
       for player in @PLAYER_LIST
         if not player.is_broke?
-          ##CONTINUE FROM HERE, REMEMBER YOU'RE LACKING 
-          
-          end
+          player_bet = query_for_bet(player)
+          @CURRENT_BETS[player] = player_bet
+        end
+        
       end
     end
     print "Game Over!"
   end
 
   def query_for_bet(player)
-    #Queries a player to print.
+    #Queries a player to print. Will loop until successful bet.
     # @return the integer amount successfully bet.
     printf "Hi %s how much would you like to bet? (You currently have $%s)\n", player.name, player.cash
     while true
@@ -78,4 +80,4 @@ end
 game = Game.new
 game.prepare
 game.query_for_bet(game.PLAYER_LIST[0])
-#game.start
+game.start

@@ -14,7 +14,7 @@ class TestDeck < Test::Unit::TestCase
     b = Deck.instance
     assert_equal(52, b.new_shuffled_deck.length)
   end
-  
+
   def test_cards
     #test that the content of the deck is equivalent to a full deck
     a = Deck.instance
