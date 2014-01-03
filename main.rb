@@ -89,8 +89,8 @@ class Turn
   #By defaukt we use a fresh deck each turn, makes card-counting impossible.
   #You can continue with the same deck by initializing next turn with old deck
 
-  attr_reader :CURRENT_DECK 
-
+  attr_reader :CURRENT_DECK
+  
   def initialize(initial_bets, deck)
     #TODO RENAME TO PLAYER_HAND_BETS
     @PLAYER_TO_BETS = {} #{player1:{[hand1] : bet1, [hand2] : bet2,
@@ -170,8 +170,8 @@ class Turn
     # @returns a list of hands (which is another list), in case player has multiple hands
     # e.g. [[j,k], [a,10]]
     # will return empty list if player not in game
-    if @PLAYER_TO_BETS.keys != nil
-      return @PLAYER_TO_BETS.keys
+    if @PLAYER_TO_BETS[player] != nil
+      return @PLAYER_TO_BETS[player].keys
     else
       return []
     end
@@ -196,13 +196,12 @@ class Turn
     new_card = @CURRENT_DECK.pop
     hand << new_card
     @PLAYER_TO_BETS[player][hand] = current_bet
-
-    return Card.evaluate(hand)
+    
+    print @PLAYER_TO_BETS
+    return hand[0].evaluate(hand) #CHECK STATIC METHOD
   end
-  
 end
  
-game = Game.new
-game.prepare
-#game.query_for_bet(game.PLAYER_LIST[0])
-game.start
+#game = Game.new
+#game.prepare
+#game.start

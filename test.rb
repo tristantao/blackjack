@@ -73,10 +73,26 @@ end
 class TestTurn <  Test::Unit::TestCase
 
   def setup
-    @a = Deck.instance
+    @deck = Deck.instance
+    @game = Game.new
+    @c = Player.new("Craig", 1000)
+    @j = Player.new("Jamie", 1000)
+    @c_hand = [Card.new('Spades','K'), Card.new('Spades','J')]
+    @j_hand = [Card.new('Spades','10'), Card.new('Spades','A')]
+    @game.PLAYER_LIST << @c
+    @game.PLAYER_LIST << @j
+
+    @initial_bet = {@c => { @c_hand=> 100}, 
+                         @j => {@j_hand => 100}}
+    @current_turn = Turn.new(@initial_bet, @deck.new_shuffled_deck)
   end
 
-  def test_turn
+  def test_deal
+    result = @current_turn.hit(@j, @j_hand)
+    puts @current_turn.get_hands(@j)[0]
+    assert_equal(@current_turn.get_hands(@j)[0].length, 3)
+   
+
   end
 
 end
