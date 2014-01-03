@@ -1,9 +1,10 @@
 require_relative 'player'
+require_relative 'util'
 
 class Game
   attr_accessor :PLAYER_LIST
   def initialize
-    @CURRENT_BETS = {} #<Player, Bet>
+    @INITIAL_BETS = {} #<Player, Bet>
     @DEALER_HAND = {} #<player, [<
     @PLAYER_LIST = []
     @DECK_INSTANCE = Deck.instance
@@ -43,19 +44,18 @@ class Game
   def start
     #Start the betting loop; ends when everyone is broke!
     while not self.game_end?
-      current_turn = Turn.new(@PLAYER_LIST, @DECK_INSTANCE.new_shuffled_deck)
  
-
       #First ask everyone for their bet price.
       for player in @PLAYER_LIST
         if not player.is_broke?
           player_bet = query_for_bet(player)
-          @CURRENT_BETS[player] = player_bet
+          @INITIAL_BETS[player] = player_bet
         end
       end
+      current_turn = Turn.new(@INITIAL_BETS, @DECK_INSTANCE.new_shuffled_deck)
       current_turn.deal()
 
-      for player in @CURRENT_BETS.keys
+      for player in @INITIAL_BETS.keys
         current_turn.process(player)
       end
     end
@@ -68,6 +68,7 @@ class Game
     printf "Hi %s how much would you like to bet? (You currently have $%s)\n", player.name, player.cash
     while true
       raw_bet_size = gets.chomp
+      
       begin 
         int_bet_size = player.bet(raw_bet_size)
       rescue ArgumentError => aE
@@ -90,14 +91,14 @@ class Turn
 
   attr_reader :CURRENT_DECK 
 
-  def initialize(players, deck)
+  def initialize(initial_bets, deck)
     #TODO RENAME TO PLAYER_HAND_BETS
     @PLAYER_TO_BETS = {} #{player1:{[hand1] : bet1, [hand2] : bet2,
                           #player2:{...}}
     @CURRENT_DECK = deck
 
-    for player in players
-      @PLAYER_TO_BETS[player] = {:initial_bet => 0}
+    for player in initial_bets.keys
+      @PLAYER_TO_BETS[player] = {:initial_bet => initial_bets[player]}
     end
   end
 
@@ -106,7 +107,7 @@ class Turn
     #1: check for special states, i.e. split, double down
     #2: for each elgible hand, ask if the player wants to (h)it/(s)tay
 
-    self.print_player_status (player)
+    a = self.print_player_status(player)
     one_card = self.check_special(player)
 
     hand_index = 0
@@ -136,33 +137,33 @@ class Turn
         elsif hit_stay_response == "s" or hit_stay_response == "stay"
           break
         else
-          printf "Your input of \"%s\" is invalid. Try again: \n"
+          printf "Your input of \"%s\" is invalid. Try again: \n", hit_stay_response
           next
         end
       end
     end  
   end
 
-  def check_special(player)
-    #Checks for special conditions, such as double down, split. 
-    #Will add to @PLAYER_TO_BETS[plyer] hash, which maps hands to bet
-    #@return true, if only one more hit is allowed
-    
-    return nil
-  end
-
-  def print_player_status (player)
+  def print_player_status(player)
     #Prints out player hand and bet,
     player_stat = @PLAYER_TO_BETS[player]
     if player_stat == nil
       raise ArgumentError "Plyer does not exist", caller
     else
-      puts "hand | corresponding bet"
+      
+      print "Your current hand overview: hand | corresponding bet\n"
       for hand in player_stat.keys
         printf "%s | $%s\n", hand ,player_stat[hand]
       end
     end
     print "\n"
+  end
+
+  def check_special(player)
+    #Checks for special conditions, such as double down, split. 
+    #Will add to @PLAYER_TO_BETS[plyer] hash, which maps hands to bet
+    #@return true, if only one more hit is allowed
+    return nil
   end
 
   def get_hands(player)
@@ -191,10 +192,9 @@ class Turn
     # @returns the value of the new hand
     current_bet = @PLAYER_TO_BETS[player][hand]
     @PLAYER_TO_BETS[player].delete(hand)
-    hand << new_card
 
     new_card = @CURRENT_DECK.pop
-    @PLAYER_TO_BETS[player].delete(hand)
+    hand << new_card
     @PLAYER_TO_BETS[player][hand] = current_bet
 
     return Card.evaluate(hand)
@@ -204,5 +204,5 @@ end
  
 game = Game.new
 game.prepare
-game.query_for_bet(game.PLAYER_LIST[0])
+#game.query_for_bet(game.PLAYER_LIST[0])
 game.start
