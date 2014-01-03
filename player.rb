@@ -9,6 +9,7 @@ class Player
 
   def bet(amount)
     # @throws ArgumentError if not enough money, or non-integer bet.
+    # @return the integer amount successfully bet.
     #You put the amount on the table, i.e. lose it. You will lose current cash immediately.
     #You will gain appropriate ammount back through get_paid() if you win.
     amount = Integer(amount)
@@ -28,4 +29,9 @@ class Player
     end
     @cash += amount
   end
+
+  def is_broke?
+    # @return true iff the current player has no more money.
+    return @cash == 0
+  end     
 end

@@ -6,22 +6,28 @@ class Card
     @kind = kind
     @value = value
   end
+
+  def is_blackjack(hand)
+    return hand.length == 2 && hand.value(hand)
+  end
   
-  def evaluate
-    #returns the numeric value of the card. i.e. King = 13 etc.
-    begin
-      return Integer(@value)
-    rescue ArgumentError => aE
-      if @value == "K"
-        return 13
-      elsif @value == "Q"
-        return 12
-      elsif @value == "J"
-        return 11
+  def evaluate(hand)
+    #Used much like a static method. Calculates the value of a hand.
+    #a hand should be a list of cards.
+    hand_value = 0
+    has_has = false
+    for card in hand
+      if card.value.is_a? Integer
+        hand_value += card.value
       else
-        raise "Unrecognized Card Value: " + aE
+        hand_value += 10
+        has_ace = true
       end
     end
+    if has_ace == true and hand_value > 21
+      hand_value -= 10
+    end
+    return hand_value
   end
 
 end
@@ -31,9 +37,9 @@ class Deck
   attr_reader :DECK
 
   @@DECK = []
-  def initialize()
+  def initialize
     #Create the cards.
-    for value in ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K']
+    for value in [2, 3, 4, 5, 6, 7, 8, 9, 10, 'J', 'Q', 'K', 'A']
       for kind in [:spades, :hearts, :diamonds, :clubs]
         @@DECK << Card.new(kind, value)
       end
@@ -45,7 +51,7 @@ class Deck
     new_deck = Array.new(@@DECK).shuffle
     return new_deck
   end
-                         
+  
 end
 
 ##usage

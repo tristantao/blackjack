@@ -21,12 +21,18 @@ class TestDeck < Test::Unit::TestCase
     a_deck_1 = a.new_shuffled_deck
     value_hash_received = Hash.new(0)
     for card in a_deck_1
-      value_hash_received[card.evaluate] = value_hash_received[card.evaluate] + 1
+      value_hash_received[card.evaluate([card])] = value_hash_received[card.evaluate([card])] + 1
     end
-    for answer_check in 1..13
+    for answer_check in 2..9
       #check that each number appears 4 times
       assert_equal(4, value_hash_received[answer_check])
     end
+    #check that there are 20 10's.
+    assert_equal(20, value_hash_received[10])
+  end
+
+  def test_card
+    #test that the cards are getting correct values
   end
 end
 
@@ -57,5 +63,23 @@ class TestPlayer <  Test::Unit::TestCase
     @tester.get_paid('10')
     assert_equal(1010, @tester.cash)
   end
+
+  def test_broke
+    @tester.bet("1000")
+    assert_equal(true, @tester.is_broke?)
+  end
 end
 
+class TestGame <  Test::Unit::TestCase
+
+  def setup
+    @game = Game.new
+    @game.PLAYER_LIST << Player.new("Craig", 1000)
+    @game.PLAYER_LIST << Player.new("Jamie", 1000)
+  end
+  
+  def test_bet
+    @game.PLAYER_LIST[0].bet('100')
+    assert_equal(@game.PLAYER_LIST[0].cash, 900)
+  end
+end
