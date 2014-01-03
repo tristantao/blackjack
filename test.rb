@@ -70,6 +70,14 @@ class TestPlayer <  Test::Unit::TestCase
   end
 end
 
+class TestTurn <  Test::Unit::TestCase
+  
+  def test_turn
+  end
+
+end
+
+
 class TestGame <  Test::Unit::TestCase
 
   def setup
@@ -83,3 +91,5 @@ class TestGame <  Test::Unit::TestCase
     assert_equal(@game.PLAYER_LIST[0].cash, 900)
   end
 end
+
+

@@ -4,8 +4,9 @@ class Game
   attr_accessor :PLAYER_LIST
   def initialize
     @CURRENT_BETS = {} #<Player, Bet>
-    @DEALER_HAND = []
+    @DEALER_HAND = {} #<player, [<
     @PLAYER_LIST = []
+    @DECK_INSTANCE = Deck.instance
   end
 
   def prepare
@@ -42,13 +43,20 @@ class Game
   def start
     #Start the betting loop; ends when everyone is broke!
     while not self.game_end?
+      current_turn = Turn.new(@PLAYER_LIST, @DECK_INSTANCE.new_shuffled_deck)
+ 
+
       #First ask everyone for their bet price.
       for player in @PLAYER_LIST
         if not player.is_broke?
           player_bet = query_for_bet(player)
           @CURRENT_BETS[player] = player_bet
         end
-        
+      end
+      current_turn.deal()
+
+      for player in @CURRENT_BETS.keys
+        current_turn.process(player)
       end
     end
     print "Game Over!"
@@ -75,6 +83,108 @@ class Game
 end
 
 class Turn
+  #This class will represent a single round of black jack. 
+  #It will have functions that can return player status and bets.
+  #By defaukt we use a fresh deck each turn, makes card-counting impossible.
+  #You can continue with the same deck by initializing next turn with old deck
+
+  attr_reader :CURRENT_DECK 
+
+  def initialize(players, deck)
+    #TODO RENAME TO PLAYER_HAND_BETS
+    @PLAYER_TO_BETS = {} #{player1:{[hand1] : bet1, [hand2] : bet2,
+                          #player2:{...}}
+    @CURRENT_DECK = deck
+
+    for player in players
+      @PLAYER_TO_BETS[player] = {:initial_bet => 0}
+    end
+  end
+
+  def process(player)
+    #Given a player, print out their current hand, and offer play options as follows.
+    #1: check for special states, i.e. split, double down
+    #2: for each elgible hand, ask if the player wants to hit/stay
+    
+    self.print_player_status (player)
+    one_card = self.check_special(player)
+
+    for hand in @PLAYER_TO_BETS[player].keys
+      #loop for each hand until valid response
+      while true
+        printf "For you  hand of %s, with bet %s, would you like to hit? Reply (h)it/(s)tay.", hand, @PLAYER_TO_BETS[player]
+        hit_stay_response = gets.chomp.downcase
+        if hit_stay_response == "h" or hit_stay_response == "hit":
+            self.hit(player, hand)
+        elsif hit_stay_response == "s" or hit_stay_response == "stay":
+            break
+        else
+          printf "Your input of \"%s\" is invalid. Try again:"
+          next
+        end
+      end
+    end
+
+    
+  end
+
+  def check_special(player)
+    #Checks for special conditions, such as double down, split. 
+    #Will add to @PLAYER_TO_BETS[plyer] hash, which maps hands to bet
+    #@return true, if only one more hit is allowed
+    
+    return nil
+  end
+
+  def print_player_status (player)
+    #Prints out player hand and bet,
+    player_stat = @PLAYER_TO_BETS[player]
+    if player_stat == nil
+      raise ArgumentError "Plyer does not exist", caller
+    else
+      puts "hand | corresponding bet"
+      for hand in player_stat.keys
+        printf "%s | $%s\n", hand ,player_stat[hand]
+      end
+    end
+    print "\n"
+  end
+
+  def get_hands(player)
+    # @returns a list of hands (which is another list), in case player has multiple hands
+    # e.g. [[j,k], [a,10]]
+    # will return empty list if player not in game
+    if @PLAYER_TO_BETS.keys != nil
+      return @PLAYER_TO_BETS.keys
+    else
+      return []
+    end
+  end
+
+  def deal
+    #deal everyone whose initial bet != 0 a pair of cards, replacing their :initial_bet value.
+    for player in @PLAYER_TO_BETS.keys
+      if @PLAYER_TO_BETS[player][:initial_bet] != 0
+        ##@TODO figure out the proper rule for blackjack...
+
+      end
+    end
+  end
+
+  def hit(player, hand)
+    # for a particukar hand of a player, add a new card, updating @PLAYER_TO_BETS
+    # @returns the value of the new hand
+    current_bet = @PLAYER_TO_BETS[player][hand]
+    @PLAYER_TO_BETS[player].delete(hand)
+    hand << new_card
+
+    new_card = @CURRENT_DECK.pop
+    @PLAYER_TO_BETS[player].delete(hand)
+    @PLAYER_TO_BETS[player][hand] = current_bet
+
+    return Card.evaluate(hand)
+  end
+  
 end
  
 game = Game.new

@@ -29,7 +29,6 @@ class Card
     end
     return hand_value
   end
-
 end
 
 class Deck
