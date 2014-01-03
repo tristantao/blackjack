@@ -29,3 +29,33 @@ class TestDeck < Test::Unit::TestCase
     end
   end
 end
+
+class TestPlayer <  Test::Unit::TestCase
+
+  def setup
+    @tester = Player.new("chester", 1000)
+  end
+  def teardown
+  end
+  
+  def test_name
+    assert_equal("chester", @tester.name)
+  end
+
+  def test_bet_happy
+    @tester.bet("100")
+    assert_equal(900, @tester.cash)
+  end
+
+  def test_bet_sad
+    assert_raise ArgumentError do
+      @tester.bet("10.01")
+    end
+  end
+  
+  def test_pay_happy
+    @tester.get_paid('10')
+    assert_equal(1010, @tester.cash)
+  end
+end
+
