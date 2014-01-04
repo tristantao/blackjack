@@ -1,5 +1,6 @@
 require_relative 'player'
 require_relative 'util'
+require 'byebug'
 
 class Game
   attr_accessor :PLAYER_LIST
@@ -68,7 +69,6 @@ class Game
     printf "Hi %s how much would you like to bet? (You currently have $%s)\n", player.name, player.cash
     while true
       raw_bet_size = gets.chomp
-      
       begin 
         int_bet_size = player.bet(raw_bet_size)
       rescue ArgumentError => aE
@@ -80,7 +80,6 @@ class Game
     end
     return int_bet_size
   end
-    
 end
 
 class Turn
@@ -89,12 +88,13 @@ class Turn
   #By defaukt we use a fresh deck each turn, makes card-counting impossible.
   #You can continue with the same deck by initializing next turn with old deck
 
-  attr_reader :CURRENT_DECK
+  attr_reader :CURRENT_DECK, :PLAYER_TO_BETS
   
   def initialize(initial_bets, deck)
     #TODO RENAME TO PLAYER_HAND_BETS
     @PLAYER_TO_BETS = {} #{player1:{[hand1] : bet1, [hand2] : bet2,
                           #player2:{...}}
+    @DEALER_HAND = []
     @CURRENT_DECK = deck
 
     for player in initial_bets.keys
@@ -179,25 +179,45 @@ class Turn
 
   def deal
     #deal everyone whose initial bet != 0 a pair of cards, replacing their :initial_bet value.
-    for player in @PLAYER_TO_BETS.keys
-      if @PLAYER_TO_BETS[player][:initial_bet] != 0
-        ##@TODO figure out the proper rule for blackjack...
+    #Completes 2 rounds of single card dealing for each person.
 
+    for player in @PLAYER_TO_BETS.keys
+      #Deal one card for everyone whose initial bet is > 0
+      if @PLAYER_TO_BETS[player][:initial_bet] > 0
+        card = @CURRENT_DECK.pop
+        @PLAYER_TO_BETS[player][[card]] = @PLAYER_TO_BETS[player][:initial_bet]
+        @PLAYER_TO_BETS[player].delete(:initial_bet)
+      else
+        @PLAYER_TO_BETS[player].delete(:initial_bet)#Remove those who are not in the game
       end
     end
+      @DEALER_HAND << @CURRENT_DECK.pop #dealer's first card
+    @PLAYER_TO_BETS.rehash
+    for player in @PLAYER_TO_BETS.keys
+      #Deal the second card
+      for half_hand in @PLAYER_TO_BETS[player].keys #list of one card
+        half_hand << @CURRENT_DECK.pop
+        @PLAYER_TO_BETS[player].rehash
+      end
+    end
+    @DEALER_HAND << @CURRENT_DECK.pop #dealer's second card
   end
 
   def hit(player, hand)
     # for a particukar hand of a player, add a new card, updating @PLAYER_TO_BETS
     # @returns the value of the new hand
-    current_bet = @PLAYER_TO_BETS[player][hand]
-    @PLAYER_TO_BETS[player].delete(hand)
+
+    if not @PLAYER_TO_BETS.has_key?(player)
+      raise ArgumentError, "The player trying to hit() is not in the game", caller
+    end
+
+    if not @PLAYER_TO_BETS[player].has_key?(hand)
+      raise ArgumentError, "Player doesn't have the hand specified in hit()", caller
+    end
 
     new_card = @CURRENT_DECK.pop
     hand << new_card
-    @PLAYER_TO_BETS[player][hand] = current_bet
-    
-    print @PLAYER_TO_BETS
+    @PLAYER_TO_BETS[player].rehash
     return hand[0].evaluate(hand) #CHECK STATIC METHOD
   end
 end

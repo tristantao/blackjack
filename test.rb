@@ -77,24 +77,46 @@ class TestTurn <  Test::Unit::TestCase
     @game = Game.new
     @c = Player.new("Craig", 1000)
     @j = Player.new("Jamie", 1000)
-    @c_hand = [Card.new('Spades','K'), Card.new('Spades','J')]
-    @j_hand = [Card.new('Spades','10'), Card.new('Spades','A')]
     @game.PLAYER_LIST << @c
     @game.PLAYER_LIST << @j
 
-    @initial_bet = {@c => { @c_hand=> 100}, 
-                         @j => {@j_hand => 100}}
+    @initial_bet = {@c => 200,
+                         @j => 100}
     @current_turn = Turn.new(@initial_bet, @deck.new_shuffled_deck)
+    @current_turn.deal
+  end
+  
+  def test_get_hands
+    assert_equal(@current_turn.PLAYER_TO_BETS[@j].keys, @current_turn.get_hands(@j)) 
   end
 
   def test_deal
-    result = @current_turn.hit(@j, @j_hand)
-    puts @current_turn.get_hands(@j)[0]
-    assert_equal(@current_turn.get_hands(@j)[0].length, 3)
-   
-
+    assert_equal(@current_turn.get_hands(@j)[0].length, 2)
   end
 
+  def test_hit_happy
+    result = @current_turn.hit(@j, @current_turn.get_hands(@j)[0])
+    assert_equal(@current_turn.get_hands(@j)[0].length, 3)
+    result = @current_turn.hit(@j, @current_turn.get_hands(@j)[0])
+    assert_equal(@current_turn.get_hands(@j)[0].length, 4)
+  end
+
+  def test_hit_sad_player
+    spectator = Player.new("Lindgren", 1000)
+    fake_hand = [Card.new('Spades','K'), Card.new('Spades','J')]
+
+    assert_raise ArgumentError do
+      @current_turn.hit(spectator,fake_hand) 
+    end
+  end
+  
+  def test_hit_sad_hand
+    fake_hand = [Card.new('Spades','K'), Card.new('Spades','J')]
+
+    assert_raise ArgumentError do
+      @current_turn.hit(@j, fake_hand) 
+    end
+  end
 end
 
 
