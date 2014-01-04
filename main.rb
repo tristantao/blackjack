@@ -6,7 +6,6 @@ class Game
   attr_accessor :PLAYER_LIST
   def initialize
     @INITIAL_BETS = {} #<Player, Bet>
-    @DEALER_HAND = {} #<player, [<
     @PLAYER_LIST = []
     @DECK_INSTANCE = Deck.instance
   end
@@ -69,11 +68,11 @@ class Game
     printf "Hi %s how much would you like to bet? (You currently have $%s)\n", player.name, player.cash
     while true
       raw_bet_size = gets.chomp
-      begin 
+      begin
         int_bet_size = player.bet(raw_bet_size)
       rescue ArgumentError => aE
         puts aE
-        puts "Remember you can only bet integer values, and only up to your current worth. Please re-enter bet"
+        puts "Remember you can only bet positive integer values, and only up to your current worth. Please re-enter bet"
         next
       end
       break
@@ -126,7 +125,7 @@ class Turn
 
       #Regular hit/stay, loop for each hand until valid response
       while true
-        printf "For you hand%s of %s, with bet %s, would you like to hit? Reply (h)it/(s)tay.\n" , hand_index, hand, @PLAYER_TO_BETS[player]
+        printf "For %s's hand%s of %s, with bet $%s, would you like to hit? Reply (h)it/(s)tay.\n" , player.name, hand_index, Card.format_hand(hand), @PLAYER_TO_BETS[player][hand]
         hit_stay_response = gets.chomp.downcase
         if hit_stay_response == "h" or hit_stay_response == "hit"
           hand_value = self.hit(player, hand)
@@ -150,10 +149,9 @@ class Turn
     if player_stat == nil
       raise ArgumentError "Plyer does not exist", caller
     else
-      
-      print "Your current hand overview: hand | corresponding bet\n"
+      printf "%s's current hand overview: hand | corresponding bet\n", player.name
       for hand in player_stat.keys
-        printf "%s | $%s\n", hand ,player_stat[hand]
+        printf "%s | $%s\n", Card.format_hand(hand) ,player_stat[hand]
       end
     end
     print "\n"
@@ -217,8 +215,10 @@ class Turn
 
     new_card = @CURRENT_DECK.pop
     hand << new_card
+    printf "Hit: %s \n", new_card.value
+    
     @PLAYER_TO_BETS[player].rehash
-    return hand[0].evaluate(hand) #CHECK STATIC METHOD
+    return Card.evaluate(hand)
   end
 end
  

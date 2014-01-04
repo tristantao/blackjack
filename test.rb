@@ -1,7 +1,7 @@
 require_relative 'main'
 require_relative 'util'
 require 'test/unit'
-
+require 'byebug'
 
 class TestDeck < Test::Unit::TestCase
   def test_deck_size
@@ -21,18 +21,27 @@ class TestDeck < Test::Unit::TestCase
     a_deck_1 = a.new_shuffled_deck
     value_hash_received = Hash.new(0)
     for card in a_deck_1
-      value_hash_received[card.evaluate([card])] = value_hash_received[card.evaluate([card])] + 1
+      value_hash_received[Card.evaluate([card])] = value_hash_received[Card.evaluate([card])] + 1
     end
     for answer_check in 2..9
       #check that each number appears 4 times
       assert_equal(4, value_hash_received[answer_check])
     end
     #check that there are 20 10's.
-    assert_equal(20, value_hash_received[10])
+    assert_equal(16, value_hash_received[10])
+    assert_equal(4, value_hash_received[11])
   end
 
-  def test_card
-    #test that the cards are getting correct values
+  def test_evaluate
+    ace = Card.new("Spades", "A")
+    jack = Card.new("Spades", "J")
+    five = Card.new("Spades", 5)
+    seven = Card.new("Spades", 7)
+    assert_equal(Card.evaluate([ace, jack]), 21)
+    assert_equal(Card.evaluate([five, seven]), 12)
+    assert_equal(Card.evaluate([ace, jack, five, seven]), 23)
+    assert_equal(Card.evaluate([ace, ace, ace]), 13)
+    assert_equal(Card.evaluate([ace, ace, ace, jack, ace, seven]), 21)
   end
 end
 

@@ -7,28 +7,37 @@ class Card
     @value = value
   end
 
-  def is_blackjack(hand)
+  def self.is_blackjack(hand)
     return hand.length == 2 && hand.value(hand)
   end
-  
-  def evaluate(hand)
-    #Used much like a static method. Calculates the value of a hand.
-    #a hand should be a list of cards.
+
+  def self.evaluate(hand)
+    #Calculates the value of a hand.
+    #A hand should be a list of cards.
     hand_value = 0
     has_has = false
     for card in hand
       if card.value.is_a? Integer
         hand_value += card.value
+      elsif card.value == 'A'
+        has_ace = true
+        hand_value += 1
       else
         hand_value += 10
-        has_ace = true
       end
     end
-    if has_ace == true and hand_value > 21
-      hand_value -= 10
+    if has_ace and hand_value <= 11
+      hand_value += 10
     end
     return hand_value
   end
+  
+  def self.format_hand(hand)
+    #Given a hand, return list of string names
+    result = hand.map { |h| h.value }
+    return result
+  end
+
 end
 
 class Deck
