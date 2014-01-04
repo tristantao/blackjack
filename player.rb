@@ -10,8 +10,9 @@ class Player
   def bet(amount)
     # @throws ArgumentError if not enough money, or non-integer bet.
     # @return the integer amount successfully bet.
-    #You put the amount on the table, i.e. lose it. You will lose current cash immediately.
+    #You put the amount on the table, i.e. immediately deduct cash.
     #You will gain appropriate ammount back through get_paid() if you win.
+
     amount = Integer(amount)
     if amount < 0
       raise ArgumentError, "Can't bet negative amount", caller

@@ -5,21 +5,30 @@ require 'byebug'
 class Game
   attr_accessor :PLAYER_LIST
   def initialize
-    @INITIAL_BETS = {} #<Player, Bet>
-    @PLAYER_LIST = []
+    @INITIAL_BETS = {} #<Player, Bet>, which is populated at the beginning of each round.
+    
+    @PLAYER_LIST = [] #Master list of pleayers
+
     @DECK_INSTANCE = Deck.instance
   end
 
   def prepare
     #Gets Player count and initializes.
     #Grab the number of players and creates PLAYER_LIST [<Player>]
-
     print "Welcome to Black Jack! How many players?\n"
-    raw_player_size = gets.chomp
-    begin
-      @int_player_size= Integer(raw_player_size)
-    rescue Exception => e
-      abort("Player Number must be be in integers!")
+    while true
+      raw_player_size = gets.chomp
+      begin
+        @int_player_size= Integer(raw_player_size)
+      rescue Exception => e
+        print ("Player number must be in integers, please re-enter! \n")
+        next
+      end
+      if @int_player_size <= 0
+        print ("Player number must grater than 0, please re-enter! \n")
+        next
+      end
+      break
     end
 
     #Create a list of players, which are Player objects.
@@ -45,19 +54,30 @@ class Game
     #Start the betting loop; ends when everyone is broke!
     while not self.game_end?
  
-      #First ask everyone for their bet price.
+      #First ask everyone for their initial bet.
       for player in @PLAYER_LIST
         if not player.is_broke?
           player_bet = query_for_bet(player)
           @INITIAL_BETS[player] = player_bet
         end
       end
-      current_turn = Turn.new(@INITIAL_BETS, @DECK_INSTANCE.new_shuffled_deck)
+
+      #Deal cards and prepare current turn
+      deck_size = ((5*(@PLAYER_LIST.length + 1)) / 52.0).ceil #determine the number of decks
+      current_turn = Turn.new(@INITIAL_BETS, @DECK_INSTANCE.new_shuffled_deck(deck_size))
       current_turn.deal()
 
+      #Cards dealt, so start each player's turn
       for player in @INITIAL_BETS.keys
         current_turn.process(player)
       end
+
+      #Dealer plays with basic strategy
+      current_turn.dealer_play()
+
+      #Now assess the table, payout as needed.
+      current_turn.end_turn_process()
+      
     end
     print "Game Over!"
   end
@@ -93,7 +113,7 @@ class Turn
     #TODO RENAME TO PLAYER_HAND_BETS
     @PLAYER_TO_BETS = {} #{player1:{[hand1] : bet1, [hand2] : bet2,
                           #player2:{...}}
-    @DEALER_HAND = []
+    @DEALER_HAND = [] #list of cards
     @CURRENT_DECK = deck
 
     for player in initial_bets.keys
@@ -105,7 +125,7 @@ class Turn
     #Given a player, print out their current hand, and offer play options as follows.
     #1: check for special states, i.e. split, double down
     #2: for each elgible hand, ask if the player wants to (h)it/(s)tay
-
+    #The function only updates the current turn Data, which is then processed at end_turn_process()
     a = self.print_player_status(player)
     one_card = self.check_special(player)
 
@@ -118,7 +138,7 @@ class Turn
         printf "You doubled down, hitting once and ending\nxs"
         hand_value = self.hit(player, hand)
         if hand_value > 21
-          printf "Bust, hand%s is now over 21.\n", hand_index
+          printf "Bust, hand%s of %s is now over 21.\n", hand_index, hand_value
         end
         next
       end
@@ -140,6 +160,7 @@ class Turn
           next
         end
       end
+      printf "____Player %s's turn is over____\n", player.name
     end  
   end
 
@@ -149,7 +170,11 @@ class Turn
     if player_stat == nil
       raise ArgumentError "Plyer does not exist", caller
     else
-      printf "%s's current hand overview: hand | corresponding bet\n", player.name
+      hidden_dealer_hand = Card.format_hand(@DEALER_HAND)
+      hidden_dealer_hand[0] = "*"
+      #puts "=" * 25
+      printf "\nThe dealer's current hand is %s", hidden_dealer_hand
+      printf "\n%s's current hand overview: hand | corresponding bet\n", player.name
       for hand in player_stat.keys
         printf "%s | $%s\n", Card.format_hand(hand) ,player_stat[hand]
       end
@@ -199,6 +224,9 @@ class Turn
       end
     end
     @DEALER_HAND << @CURRENT_DECK.pop #dealer's second card
+    print "=" * 10
+    print " Cards Dealt "
+    puts "=" * 10
   end
 
   def hit(player, hand)
@@ -215,11 +243,45 @@ class Turn
 
     new_card = @CURRENT_DECK.pop
     hand << new_card
-    printf "Hit: %s \n", new_card.value
+    printf "Hit Result: %s \n", new_card.value
     
     @PLAYER_TO_BETS[player].rehash
     return Card.evaluate(hand)
   end
+
+  def dealer_play()
+    #Process dealer's turn, after players have finished
+    #current strategy is if player remaining, hit until over 17.
+    # @updates :DEALER_HAND
+    # @return Dealer's final hand value
+
+    printf "\n____Beginning Dealer's turn with hand %s ____\n", Card.format_hand(@DEALER_HAND)
+
+    while Card.evaluate(@DEALER_HAND) < 17
+      new_card = @CURRENT_DECK.pop
+      @DEALER_HAND << new_card
+      printf "Dealer hit, received %s\n", new_card.value
+      printf "New dealer hand: %s\n", Card.format_hand(@DEALER_HAND)
+    end
+    printf "\n____Dealer's turn complete with hand %s ____\n", Card.format_hand(@DEALER_HAND)
+    return Card.evaluate(@DEALER_HAND)
+  end
+
+  def end_turn_process()
+    # arrange the payout as defined by blackjack rules.
+    #
+
+    dealer_bust = false
+    if Card.evaluate(@DEALER_HAND) > 21
+      dealer_bust = true
+    end
+    
+    
+    
+  end
+    
+    
+
 end
  
 #game = Game.new

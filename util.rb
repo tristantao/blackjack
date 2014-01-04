@@ -54,10 +54,16 @@ class Deck
     end
   end
 
-  def new_shuffled_deck
-    #returns a new shuffled list of cards representing a deck. 
-    new_deck = Array.new(@@DECK).shuffle
-    return new_deck
+  def new_shuffled_deck(deck_count)
+    #returns a new shuffled list of cards representing a deck.
+    #will return @param deck_count number of decks
+    return_deck = []
+    for deck_index in 1..deck_count
+      new_deck = Array.new(@@DECK)
+      return_deck += new_deck
+    end
+      return_deck.shuffle!
+    return return_deck
   end
   
 end
