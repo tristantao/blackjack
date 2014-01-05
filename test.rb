@@ -1,4 +1,7 @@
-require_relative 'main'
+# Author: Tristan Tao
+# A simple incomplete unit testing, used for early TDD.
+
+require_relative 'game_core'
 require_relative 'util'
 require 'test/unit'
 require 'byebug'

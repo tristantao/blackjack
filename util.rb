@@ -1,3 +1,6 @@
+# Author: Tristan Tao
+# Purpose: Contains Card/Deck, (was planned for other misc) classes.
+
 require 'singleton'
 
 class Card
@@ -34,7 +37,7 @@ class Card
   end
   
   def self.format_hand(hand)
-    #Given a hand, return list of string names
+    #Given a hand, return list of string names suitable for printing.
     result = hand.map { |h| h.value }
     return result
   end
