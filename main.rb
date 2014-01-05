@@ -32,7 +32,6 @@ class Game
     end
 
     #Create a list of players, which are Player objects.
-    @PLAYER_LIST = []
     for i in 1..@int_player_size
       #Initialize with (name, starting_cash)
       current_player = Player.new("Player"+i.to_s, 1000)
@@ -53,7 +52,12 @@ class Game
   def start
     #Start the betting loop; ends when everyone is broke!
     while not self.game_end?
- 
+      @INITIAL_BETS = {}
+
+      printf "*" * 15
+      printf " Starting New Round "
+      puts "*" * 15
+      
       #First ask everyone for their initial bet.
       for player in @PLAYER_LIST
         if not player.is_broke?
@@ -78,8 +82,21 @@ class Game
       #Now assess the table, payout as needed.
       current_turn.end_turn_process()
       
+      #remove people who are now broke!
+      remove_losers()
+
     end
     print "Game Over!"
+  end
+
+  def remove_losers()
+    #Will remove players who no longer have money
+    for player in @PLAYER_LIST
+      if player.cash == 0
+        @PLAYER_LIST.delete(player)
+        printf "****Removing %s from the game since the player no longer has cash****\n", player.name
+      end
+    end
   end
 
   def query_for_bet(player)
@@ -161,6 +178,7 @@ class Turn
         end
       end
       printf "____Player %s's turn is over____\n", player.name
+      sleep(1)
     end  
   end
 
@@ -174,7 +192,7 @@ class Turn
       hidden_dealer_hand[0] = "*"
       #puts "=" * 25
       printf "\nThe dealer's current hand is %s", hidden_dealer_hand
-      printf "\n%s's current hand overview: hand | corresponding bet\n", player.name
+      printf "\n%s's current hand OVERVIEW: hand | corresponding bet\n", player.name
       for hand in player_stat.keys
         printf "%s | $%s\n", Card.format_hand(hand) ,player_stat[hand]
       end
@@ -257,33 +275,63 @@ class Turn
 
     printf "\n____Beginning Dealer's turn with hand %s ____\n", Card.format_hand(@DEALER_HAND)
 
+    printf "Dealer is thinking\n"
+    sleep(1)
     while Card.evaluate(@DEALER_HAND) < 17
+      sleep(1)
       new_card = @CURRENT_DECK.pop
       @DEALER_HAND << new_card
       printf "Dealer hit, received %s\n", new_card.value
       printf "New dealer hand: %s\n", Card.format_hand(@DEALER_HAND)
     end
+    sleep(1)
     printf "\n____Dealer's turn complete with hand %s ____\n", Card.format_hand(@DEALER_HAND)
+    sleep(1)
     return Card.evaluate(@DEALER_HAND)
   end
 
   def end_turn_process()
     # arrange the payout as defined by blackjack rules.
-    #
+    # Implements "draw" for all ties, meaning pay back original bet.
+
+    printf "\n____processing results with dealer hand: %s____\n", Card.format_hand(@DEALER_HAND)
 
     dealer_bust = false
-    if Card.evaluate(@DEALER_HAND) > 21
+    dealer_val = Card.evaluate(@DEALER_HAND)
+    if dealer_val > 21
       dealer_bust = true
     end
-    
-    
-    
+
+    for player in @PLAYER_TO_BETS.keys
+      for hand in @PLAYER_TO_BETS[player].keys
+        hand_value = Card.evaluate(hand)
+        bet_value = @PLAYER_TO_BETS[player][hand]
+        if  hand_value > 21 #player bust, no payout.
+          printf "BUST: %s's hand of %s will not receive any payout\n", player.name, Card.format_hand(hand)
+        elsif hand_value <= 21 and not dealer_bust
+          #compare hands
+          if hand_value > dealer_val
+            printf "WIN: Payout to %s's hand of %s for $%s\n", player.name, Card.format_hand(hand), bet_value*2
+            player.get_paid(bet_value * 2)
+          elsif hand_value < dealer_val
+            printf "LOSS: %s's hand of %s will not receive any payout\n", player.name, Card.format_hand(hand)
+          else
+            printf "DRAW: Return to %s's hand of %s for $%s\n", player.name, Card.format_hand(hand), bet_value
+            player.get_paid(bet_value)
+          end #end hand comparison
+        elsif hand_value <= 21 and dealer_bust
+          printf "DEALER_BUST: Payout to %s's hand of %s for $%s\n", player.name, Card.format_hand(hand), bet_value*2
+          player.get_paid(bet_value * 2)
+        else
+          raise ArgumentError "Unhandled case in end_turn_process()", caller
+        end
+      end
+    end
+    printf "___Finished Processing Payouts___\n\n"
   end
-    
-    
 
 end
  
-#game = Game.new
-#game.prepare
-#game.start
+game = Game.new
+game.prepare
+game.start
