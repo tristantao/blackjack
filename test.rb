@@ -4,7 +4,7 @@
 require_relative 'game_core'
 require_relative 'util'
 require 'test/unit'
-require 'byebug'
+#require 'byebug'
 
 class TestDeck < Test::Unit::TestCase
   def test_deck_size
