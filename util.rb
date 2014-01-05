@@ -7,8 +7,8 @@ class Card
     @value = value
   end
 
-  def self.is_blackjack(hand)
-    return hand.length == 2 && hand.value(hand)
+  def self.is_blackjack?(hand)
+    return hand.length == 2 && Card.evaluate(hand) == 21
   end
 
   def self.evaluate(hand)
@@ -16,6 +16,7 @@ class Card
     #A hand should be a list of cards.
     hand_value = 0
     has_has = false
+    #byebug
     for card in hand
       if card.value.is_a? Integer
         hand_value += card.value
@@ -38,6 +39,12 @@ class Card
     return result
   end
 
+  def self.can_split?(hand)
+    if self.evaluate([hand[0]]) ==  self.evaluate([hand[1]])
+      return true
+    end
+    return false
+  end
 end
 
 class Deck

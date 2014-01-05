@@ -6,7 +6,6 @@ class Game
   attr_accessor :PLAYER_LIST
   def initialize
     @INITIAL_BETS = {} #<Player, Bet>, which is populated at the beginning of each round.
-    
     @PLAYER_LIST = [] #Master list of pleayers
 
     @DECK_INSTANCE = Deck.instance
@@ -14,7 +13,7 @@ class Game
 
   def prepare
     #Gets Player count and initializes.
-    #Grab the number of players and creates PLAYER_LIST [<Player>]
+    #Grab the number of players and populates PLAYER_LIST [<Player>]
     print "Welcome to Black Jack! How many players?\n"
     while true
       raw_player_size = gets.chomp
@@ -144,15 +143,23 @@ class Turn
     #2: for each elgible hand, ask if the player wants to (h)it/(s)tay
     #The function only updates the current turn Data, which is then processed at end_turn_process()
     a = self.print_player_status(player)
-    one_card = self.check_special(player)
+    
+    if Card.is_blackjack?(@PLAYER_TO_BETS[player].keys[0])
+      printf "BLACKJACK!____Player %s's turn is over____\n", player.name
+      return nil
+    end
+
+    #first process any special states
+    doubled_down = self.check_special(player)
 
     hand_index = 0
     for hand in @PLAYER_TO_BETS[player].keys
       hand_index += 1
-
-      #Doubled down, so hit and quit.
+      one_card = doubled_down[hand] #since doubled down, only take one card
+      
+      #Doubled down, so hit and it.
       if one_card
-        printf "You doubled down, hitting once and ending\nxs"
+        printf "%s doubled down on %s, hitting once and ending\n", player.name, Card.format_hand(hand)
         hand_value = self.hit(player, hand)
         if hand_value > 21
           printf "Bust, hand%s of %s is now over 21.\n", hand_index, hand_value
@@ -169,7 +176,7 @@ class Turn
           if hand_value > 21
             printf "Bust, hand%s is now over 21.\n", hand_index
             break
-          end          
+          end
         elsif hit_stay_response == "s" or hit_stay_response == "stay"
           break
         else
@@ -202,11 +209,80 @@ class Turn
 
   def check_special(player)
     #Checks for special conditions, such as double down, split. 
-    #Will add to @PLAYER_TO_BETS[plyer] hash, which maps hands to bet
-    #@return true, if only one more hit is allowed
-    return nil
-  end
+    #Allows doubling down after split.
+    #Does NOT allow re-split
+    # @returns a hash: {hand => boolean} containing bolean indicating the hand was doubled down.
 
+    starting_hand = @PLAYER_TO_BETS[player].keys[0]
+    initial_bet = @PLAYER_TO_BETS[player][starting_hand]
+
+    #Check for split
+    if Card.can_split?(starting_hand) and player.has_enough_money(@PLAYER_TO_BETS[player][starting_hand])
+      #Ask if user wants to split
+      printf "%s's hand of %s can be split. Proceed? (s)plit/(n)o.\n", player.name, Card.format_hand(starting_hand)
+      while true
+        split_response = gets.chomp
+        if split_response.downcase == 's'
+          player.bet(@PLAYER_TO_BETS[player][starting_hand]) #betting for the additional hand
+
+          new_player_stat = {}
+          #split the hand into 2, enter split bet appropariately
+          hand_one = [starting_hand[0]]
+          hit_one = @CURRENT_DECK.pop
+          hand_one << hit_one
+          new_player_stat[hand_one] = initial_bet
+
+          hand_two = [starting_hand[1]]
+          hit_two = @CURRENT_DECK.pop
+          hand_two << hit_two
+          new_player_stat[hand_two] = initial_bet
+          
+          @PLAYER_TO_BETS[player] = new_player_stat
+
+          printf "___Split into %s and %s___\n", Card.format_hand(hand_one), Card.format_hand(hand_two)
+          break
+        elsif split_response.downcase == 'n'
+          break
+        else
+          printf "Your input of \"%s\" is invalid. Try again [(s)plit/(n)o]: \n", split_response
+        end
+      end
+    end
+    @PLAYER_TO_BETS.rehash
+    #@PLAYER_TO_BETS[player].rehash
+
+    #Ask for Double
+    double_down = {}
+    for hand in @PLAYER_TO_BETS[player].keys
+      if not player.has_enough_money(@PLAYER_TO_BETS[player][hand])
+        printf "Not enough money to double down for hand: %s\n", Card.format_hand(hand)
+        double_down[hand] = false
+        next
+      end
+
+      printf "For %s's hand of %s, with bet $%s, would you like to Double Down? Reply (d)ouble/(n)o.\n" , player.name, Card.format_hand(hand), @PLAYER_TO_BETS[player][hand]
+      while true
+        double_down_response = gets.chomp
+        if double_down_response.downcase == 'd'
+          double_down[hand] = true
+          player.bet(@PLAYER_TO_BETS[player][hand]) #Make additional bet
+          @PLAYER_TO_BETS[player][hand] = @PLAYER_TO_BETS[player][hand] * 2 #double payout amount
+          printf "Doubling down initial bet for %s to $%s\n", Card.format_hand(hand), @PLAYER_TO_BETS[player][hand]
+          @PLAYER_TO_BETS[player].rehash
+          break
+        elsif double_down_response.downcase =='n'
+          double_down[hand] = false
+          break
+        else
+          printf "Your input of \"%s\" is invalid. Try again [(d)ouble/(n)o]: \n", double_down_response
+        end
+      end
+    end
+    #@PLAYER_TO_BETS.rehash
+    #@PLAYER_TO_BETS[player].rehash
+    return double_down
+  end
+  
   def get_hands(player)
     # @returns a list of hands (which is another list), in case player has multiple hands
     # e.g. [[j,k], [a,10]]
@@ -250,7 +326,7 @@ class Turn
   def hit(player, hand)
     # for a particukar hand of a player, add a new card, updating @PLAYER_TO_BETS
     # @returns the value of the new hand
-
+    
     if not @PLAYER_TO_BETS.has_key?(player)
       raise ArgumentError, "The player trying to hit() is not in the game", caller
     end
@@ -272,11 +348,10 @@ class Turn
     #current strategy is if player remaining, hit until over 17.
     # @updates :DEALER_HAND
     # @return Dealer's final hand value
-
+    
     printf "\n____Beginning Dealer's turn with hand %s ____\n", Card.format_hand(@DEALER_HAND)
 
     printf "Dealer is thinking\n"
-    sleep(1)
     while Card.evaluate(@DEALER_HAND) < 17
       sleep(1)
       new_card = @CURRENT_DECK.pop
@@ -285,7 +360,11 @@ class Turn
       printf "New dealer hand: %s\n", Card.format_hand(@DEALER_HAND)
     end
     sleep(1)
-    printf "\n____Dealer's turn complete with hand %s ____\n", Card.format_hand(@DEALER_HAND)
+    if Card.evaluate(@DEALER_HAND) > 21
+      printf "\n____Dealer's turn complete with hand %s: BUST ____\n", Card.format_hand(@DEALER_HAND)
+    else
+      printf "\n____Dealer's turn complete with hand %s ____\n", Card.format_hand(@DEALER_HAND)
+    end
     sleep(1)
     return Card.evaluate(@DEALER_HAND)
   end
@@ -301,7 +380,7 @@ class Turn
     if dealer_val > 21
       dealer_bust = true
     end
-
+    
     for player in @PLAYER_TO_BETS.keys
       for hand in @PLAYER_TO_BETS[player].keys
         hand_value = Card.evaluate(hand)
@@ -329,9 +408,8 @@ class Turn
     end
     printf "___Finished Processing Payouts___\n\n"
   end
-
 end
- 
-game = Game.new
-game.prepare
-game.start
+
+#game = Game.new
+#game.prepare
+#game.start

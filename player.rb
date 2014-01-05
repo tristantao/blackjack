@@ -38,5 +38,10 @@ class Player
   def is_broke?
     # @return true iff the current player has no more money.
     return @cash == 0
-  end     
+  end
+
+  def has_enough_money(amount)
+    # @return true if player has enough money left over
+    return amount <= @cash
+  end
 end
