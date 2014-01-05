@@ -26,7 +26,9 @@ class Turn
     @CURRENT_DECK = deck
 
     for player in initial_bets.keys
-      @PLAYER_TO_BETS[player] = {:initial_bet => initial_bets[player]}
+      if initial_bets[player] > 0
+        @PLAYER_TO_BETS[player] = {:initial_bet => initial_bets[player]}
+      end
     end
   end
 
@@ -243,6 +245,19 @@ class Turn
     # @updates :DEALER_HAND
     # @return Dealer's final hand value
     
+    no_one_left = true
+    for player in @PLAYER_TO_BETS.keys
+      for hand in @PLAYER_TO_BETS[player].keys
+        if Card.evaluate(hand) <= 21
+          no_one_left = false
+        end
+      end
+    end
+    if no_one_left
+      print "\n____No player left to win, skipping dealer ____\n"
+      return nil
+    end
+
     printf "\n____Beginning Dealer's turn with hand %s ____\n", Card.format_hand(@DEALER_HAND)
 
     printf "Dealer is thinking\n"

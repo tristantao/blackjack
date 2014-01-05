@@ -79,7 +79,7 @@ class Game
       current_turn.deal()
 
       #Cards dealt, so start each player's turn
-      for player in @INITIAL_BETS.keys
+      for player in current_turn.PLAYER_TO_BETS.keys
         current_turn.process(player)
       end
 
@@ -93,7 +93,7 @@ class Game
       remove_losers()
 
     end
-    print "Game Over!"
+    puts "Game Over!"
   end
 
   def remove_losers()

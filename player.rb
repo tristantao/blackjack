@@ -30,7 +30,7 @@ class Player
     # Immediately increases player's current cash.
     amount = Integer(amount)
     if amount <= 0
-      raise ArgumentError, "Can't give negatie payouts.", caller
+      raise ArgumentError, "Can't give negative payouts.", caller
     end
     @cash += amount
   end
